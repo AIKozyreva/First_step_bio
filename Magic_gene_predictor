@@ -1,0 +1,102 @@
+# List of promoter sequences
+promotor_sequences = ["TATAAA", "TTGACA", "TATAAT", "GTGTCA", "TTTACA", "TTGATA", "CTGACG"]
+
+# Function to find promoter sequences in the unknown DNA sequence
+def find_promoters(UN_DNA):
+    promoter_table = []  # Store detected promoters with their positions
+    
+    for promoter_seq in promotor_sequences:
+        start = 0
+        while start < len(UN_DNA):
+            pos = UN_DNA.find(promoter_seq, start)
+            if pos != -1:
+                # Add the detected promoter and its position to the table
+                promoter_table.append(["Promoter", promoter_seq, pos])
+                start = pos + 1
+            else:
+                break
+    
+    return promoter_table
+
+# Function to find termination sites in the unknown DNA sequence
+def find_termination_sites(UN_DNA):
+    termination_table = []  # Store detected termination sites with their positions
+    
+    # Define the minimum length of consecutive 'A' nucleotides to consider
+    min_a_length = 5
+    
+    index = 0
+    while index < len(UN_DNA):
+        a_count = 0
+        start = index
+        
+        while index < len(UN_DNA) and UN_DNA[index] == 'A':
+            a_count += 1
+            index += 1
+        
+        if a_count >= min_a_length:
+            termination_seq = UN_DNA[start:index]
+            termination_table.append(["Terminator", termination_seq, start])
+        else:
+            index += 1
+    
+    return termination_table
+
+# Function to read DNA sequence from a file
+def read_dna_sequence_from_file(filename):
+    try:
+        with open(filename, 'r') as file:
+            dna_sequence = file.read().strip()  # Read and remove leading/trailing whitespace
+        return dna_sequence
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found.")
+        return None
+
+# Function to get DNA sequence from user input
+def get_dna_sequence_from_user():
+    return input("Enter the unknown DNA sequence: ").strip()
+
+# Choose either file input or user input
+choice = input("Enter 'file' to read from a file or 'input' to enter manually: ").strip().lower()
+
+if choice == 'file':
+    file_name = input("Enter the filename: ").strip()
+    UN_DNA = read_dna_sequence_from_file(file_name)
+elif choice == 'input':
+    UN_DNA = get_dna_sequence_from_user()
+else:
+    print("Invalid choice. Please enter 'file' or 'input'.")
+
+if UN_DNA:
+    print("Unknown DNA sequence:", UN_DNA)
+    
+    # Detect promoters and terminators
+    promotor_table = find_promoters(UN_DNA)
+    termination_table = find_termination_sites(UN_DNA)
+    
+    # Combine the tables and sort them by position
+    combined_table = promotor_table + termination_table
+    combined_table.sort(key=lambda x: x[2])
+    
+    # Initialize variables to count pairs of promoter-terminator
+    pairs_count = 0
+    open_promoters = []  # Track open promoters waiting for terminators
+    
+    # Iterate through the combined table
+    for entry in combined_table:
+        if entry[0] == "Promoter":
+            open_promoters.append(entry)
+        elif entry[0] == "Terminator":
+            if open_promoters:
+                pairs_count += 1
+                open_promoters.pop()
+    
+    # Print the combined table
+    print("Number of Detected Termination Sites:", len(termination_table))
+    print("Number of Detected Promoters:", len(promotor_table))
+    print("Number of Promoter-Terminator Pairs:", pairs_count)
+    print("After first iteration there are", pairs_count, "genes in your genome")
+    print("{:<4} | {:<7} | {:<10} | {:<10}".format("№", "Type", "Sequence", "Position"))
+    for i, entry in enumerate(combined_table, start=1):
+        entry[0] = entry[0].capitalize()  # Capitalize the type
+        print("{:<4} | {:<7} | {:<10} | {:<10}".format(i, *entry))
